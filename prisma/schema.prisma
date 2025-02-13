@@ -8,106 +8,104 @@ datasource db {
 }
 
 model genre {
-  id     Int      @id @default(autoincrement())
-  title  String   @db.VarChar(255)
-  movies movies[]
-}
-
-model movies {
-  id           Int        @id @default(autoincrement())
-  title        String     @db.VarChar(255)
-  summary      String     @db.VarChar(500)
-  detail       String     @db.LongText
-  runningTime  Int        @map("running_time")  
-  genreId      Int        @map("genre_id")     
-  ratingId     Int        @map("rating_id")   
-  country_code String     @db.VarChar(255)
-  language     String     @db.VarChar(255)
-  image_url    String?    @db.VarChar(500)
-  created_at   DateTime?  @default(now()) @db.Timestamp(0)
-  updated_at   DateTime?  @default(now()) @db.Timestamp(0)
-  genre        genre      @relation(fields: [genreId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "genre_id") 
-  rating       rating     @relation(fields: [ratingId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "rating_id") 
-  schedule     schedule[]
-
-  @@index([genreId], map: "genre_id_idx")  
-  @@index([ratingId], map: "rating_id_idx")
+  id    Int    @id @default(autoincrement())
+  title String @db.VarChar(255)
 }
 
 model payment {
-  id                 Int       @id @default(autoincrement())
-  ticket_id          Int
-  price              Int
-  payment_time       DateTime? @default(now()) @db.Timestamp(0)
-  status             String?   @default("\"underway\"") @db.VarChar(50)
-  payment_pk_user_id Int
-  users              users     @relation(fields: [payment_pk_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payment_pk_user_id")
-  ticket             ticket    @relation(fields: [ticket_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_id")
-
-  @@index([payment_pk_user_id], map: "payment_pk_user_id_idx")
-  @@index([ticket_id], map: "ticket_id_idx")
-}
-
-model rating {
-  id     Int      @id @default(autoincrement())
-  rating Int
-  movies movies[]
-}
-
-model schedule {
-  id                     Int      @id @default(autoincrement())
-  start_time             String   @db.VarChar(255)
-  end_time               String   @db.VarChar(255)
-  schedule_fk_movie_id   Int
-  schedule_fk_theater_id Int
-  movies                 movies   @relation(fields: [schedule_fk_movie_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "schedule_fk_movie_id")
-  theater                theater  @relation(fields: [schedule_fk_theater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "schedule_fk_theater_id")
-  ticket                 ticket[]
-
-  @@index([schedule_fk_movie_id], map: "schedule_fk_movie_id_idx")
-  @@index([schedule_fk_theater_id], map: "schedule_fk_theater_id_idx")
+  id           BigInt    @id @default(autoincrement())
+  price        Int
+  payment_time DateTime? @default(now()) @db.Timestamp(0)
+  status       String?   @default("\"underway\"") @db.VarChar(50)
 }
 
 model seat {
-  id         Int     @id @default(autoincrement())
-  theater_id Int
+  id         BigInt    @id @default(autoincrement())
+  theater_id BigInt
   col_num    Int
-  row_num    String  @db.VarChar(45)
+  row_num    String    @db.VarChar(45)
   price      Int
-  theater    theater @relation(fields: [theater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "theater_id")
+  status     String    @db.VarChar(100)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @db.Timestamp(0)
 
   @@index([theater_id], map: "theater_id_idx")
 }
 
 model theater {
-  id       Int        @id @default(autoincrement())
-  title    String     @db.VarChar(200)
-  floor    Int
-  max_seat Int
-  schedule schedule[]
-  seat     seat[]
+  id         BigInt    @id @default(autoincrement())
+  name       String    @db.VarChar(200)
+  address_id BigInt
+  phone      String    @db.VarChar(255)
+  email      String    @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  update_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([address_id])
 }
 
 model ticket {
-  id          Int       @id @default(autoincrement())
-  ticket_time DateTime? @default(now()) @db.Timestamp(0)
-  seat_count  Int
-  schedule_id Int
-  user_id     Int
-  payment     payment[]
-  schedule    schedule  @relation(fields: [schedule_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "schedule_id")
-  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_id")
+  id          BigInt    @id @default(autoincrement())
+  schedule_id BigInt
+  user_id     BigInt
+  seat_id     BigInt
+  price       Decimal   @db.Decimal(10, 2)
+  status      String    @db.VarChar(45)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
 
   @@index([schedule_id], map: "schedule_id_idx")
   @@index([user_id], map: "user_id_idx")
 }
 
 model users {
-  id           Int       @id @default(autoincrement())
+  id           BigInt    @id @default(autoincrement())
   email        String    @unique(map: "email_UNIQUE") @db.VarChar(255)
   phone_number String    @db.VarChar(255)
   provider     String    @db.VarChar(45)
   created_at   DateTime? @default(now()) @db.Timestamp(0)
-  payment      payment[]
-  ticket       ticket[]
+  updated_at   DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model address {
+  id       BigInt @id @default(autoincrement())
+  street   String @db.VarChar(255)
+  city     String @db.VarChar(255)
+  state    String @db.VarChar(255)
+  country  String @db.VarChar(255)
+  zip_code String @db.VarChar(255)
+}
+
+model movies {
+  id           BigInt    @id @default(autoincrement())
+  title        String    @db.VarChar(255)
+  summary      String    @db.VarChar(500)
+  detail       String    @db.LongText
+  running_time Int
+  country_code String    @db.VarChar(255)
+  language     String    @db.VarChar(255)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+  updated_at   DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model schedule {
+  id         BigInt    @id @default(autoincrement())
+  movie_id   BigInt
+  screen_id  BigInt
+  start_time String    @db.VarChar(255)
+  end_time   String    @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model screen {
+  id            BigInt    @id @default(autoincrement())
+  screen_number String    @db.VarChar(50)
+  capacity      Int
+  theater_id    BigInt
+  screen_type   String    @db.VarChar(45)
+  floor         Int
+  hall          String    @db.VarChar(45)
+  created_at    DateTime? @default(now()) @db.Timestamp(0)
+  update_at     DateTime? @default(now()) @db.Timestamp(0)
 }

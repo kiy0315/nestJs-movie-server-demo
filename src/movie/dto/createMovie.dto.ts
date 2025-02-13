@@ -20,13 +20,7 @@ export class CreateMovieDto {
   detail: string;
 
   @IsInt()
-  running_time: number;
-
-  @IsInt()
-  genre_id: number;
-
-  @IsInt()
-  rating_id: number;
+  runningTime: number;
 
   @IsString()
   @IsNotEmpty()

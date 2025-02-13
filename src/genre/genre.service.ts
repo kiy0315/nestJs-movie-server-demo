@@ -18,7 +18,7 @@ export class GenreService {
 
   async deleteGenre(genreId: number) {
     try {
-      const genre = await this.prisma.genre.delete({
+        return await this.prisma.genre.delete({
         where: { id: genreId },
       });
     } catch (error) {
