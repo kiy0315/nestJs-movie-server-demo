@@ -3,58 +3,93 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTicketDto } from './dto/createTicket.dto';
 
 @Injectable()
 export class TicketService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
+  ) {}
 
-  // 티켓 예약
   async reservationTicket(createTicketDto: CreateTicketDto) {
     const { schedule_id, user_id, seat_id, price, status } = createTicketDto;
-    const seat = await this.prisma.seat.findUnique({
-      where: { id: seat_id },
-    });
 
-    if (!seat) {
-      throw new NotFoundException('Seat not found');
+    const lockKey = `seat_lock:${seat_id}`;
+    const lockValue = `user:${user_id}`;
+    const ttl = 30; 
+
+    const lockAcquired = await this.redisService.setLock(
+      lockKey,
+      lockValue,
+      ttl,
+    );
+
+    if (!lockAcquired) {
+      throw new BadRequestException(
+        'Seat is already reserved or being processed',
+      );
     }
+    const transaction = await this.prisma.$transaction(async (prisma) => {
+      const seat = await prisma.seat.findUnique({
+        where: { id: seat_id },
+      });
 
-    const existingTicket = await this.prisma.ticket.findFirst({
-      where: { seat_id, schedule_id },
+      if (!seat) {
+        await this.redisService.releaseLock(lockKey); 
+        throw new NotFoundException('Seat not found');
+      }
+
+      const existingTicket = await prisma.ticket.findFirst({
+        where: { seat_id, schedule_id },
+      });
+
+      if (existingTicket) {
+        await this.redisService.releaseLock(lockKey); 
+        throw new BadRequestException('Seat is already reserved');
+      }
+
+      const ticket = await prisma.ticket.create({
+        data: {
+          schedule_id,
+          user_id,
+          seat_id,
+          price,
+          status,
+        },
+      });
+
+      return ticket; 
     });
 
-    if (existingTicket) {
-      throw new BadRequestException('Seat is already reserved');
-    }
+    await this.redisService.releaseLock(lockKey);
 
-    const schedule = await this.prisma.schedule.findUnique({
-      where: { id: schedule_id },
-    });
-
-    if (!schedule) {
-      throw new NotFoundException('Schedule not found');
-    }
-
-    const ticket = await this.prisma.ticket.create({
-      data: {
-        schedule_id,
-        user_id,
-        seat_id,
-        price,
-        status,
-      },
-    });
-
-    return ticket;
+    return transaction; 
   }
 
-  // 티켓 조회
   async getTicketById(ticketId: number) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { users: { select: { email: true } } },
+      include: {
+        user: { select: { email: true } },
+        seat: { select: { row_num: true, col_num: true } },
+        schedule: {
+          select: { start_time: true, end_time: true },
+          include: {
+            movie: { select: { title: true, running_time: true } },
+            screen: {
+              select: {
+                screen_number: true,
+                hall: true,
+                floor: true,
+                screen_type: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!ticket) {
@@ -64,7 +99,6 @@ export class TicketService {
     return ticket;
   }
 
-  // 티켓 삭제
   async deleteTicketById(ticketId: number) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
@@ -81,4 +115,3 @@ export class TicketService {
     return { message: 'Ticket deleted successfully' };
   }
 }
-
