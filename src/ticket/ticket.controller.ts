@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { TicketService } from './ticet.service';
 import { CreateTicketDto } from './dto/createTicket.dto';
-import { UpdateTicketDto } from './dto/updateTicket.dto';
 
 @Controller('tickets')
 export class TicketController {
