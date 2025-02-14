@@ -6,12 +6,13 @@ import {
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTicketDto } from './dto/createTicket.dto';
-
+import { TicketGateway } from 'src/socket/socket.gateway';
 @Injectable()
 export class TicketService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
+    private readonly ticketGateway: TicketGateway,
   ) {}
 
   async reservationTicket(createTicketDto: CreateTicketDto) {
@@ -19,54 +20,53 @@ export class TicketService {
 
     const lockKey = `seat_lock:${seat_id}`;
     const lockValue = `user:${user_id}`;
-    const ttl = 30; 
+    const ttl = 30;
 
     const lockAcquired = await this.redisService.setLock(
       lockKey,
       lockValue,
       ttl,
     );
-
     if (!lockAcquired) {
       throw new BadRequestException(
         'Seat is already reserved or being processed',
       );
     }
-    const transaction = await this.prisma.$transaction(async (prisma) => {
-      const seat = await prisma.seat.findUnique({
-        where: { id: seat_id },
+
+    try {
+      const transaction = await this.prisma.$transaction(async (prisma) => {
+        const seat = await prisma.seat.findUnique({ where: { id: seat_id } });
+
+        if (!seat) {
+          throw new NotFoundException('Seat not found');
+        }
+
+        const existingTicket = await prisma.ticket.findFirst({
+          where: { seat_id, schedule_id },
+        });
+
+        if (existingTicket) {
+          throw new BadRequestException('Seat is already reserved');
+        }
+
+        const ticket = await prisma.ticket.create({
+          data: { schedule_id, user_id, seat_id, price, status },
+        });
+
+        await prisma.seat.update({
+          where: { id: seat_id },
+          data: { status: 'reserved' },
+        });
+
+        return ticket;
       });
 
-      if (!seat) {
-        await this.redisService.releaseLock(lockKey); 
-        throw new NotFoundException('Seat not found');
-      }
+      this.ticketGateway.handleSeatUpdate({ seat_id, status: 'reserved' });
 
-      const existingTicket = await prisma.ticket.findFirst({
-        where: { seat_id, schedule_id },
-      });
-
-      if (existingTicket) {
-        await this.redisService.releaseLock(lockKey); 
-        throw new BadRequestException('Seat is already reserved');
-      }
-
-      const ticket = await prisma.ticket.create({
-        data: {
-          schedule_id,
-          user_id,
-          seat_id,
-          price,
-          status,
-        },
-      });
-
-      return ticket; 
-    });
-
-    await this.redisService.releaseLock(lockKey);
-
-    return transaction; 
+      return transaction;
+    } finally {
+      await this.redisService.releaseLock(lockKey);
+    }
   }
 
   async getTicketById(ticketId: number) {
