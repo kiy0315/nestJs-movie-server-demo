@@ -8,7 +8,7 @@ import {
   Delete,
   HttpStatus,
 } from '@nestjs/common';
-import { TicketService } from './ticet.service';
+import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dto/createTicket.dto';
 
 @Controller('tickets')
@@ -17,19 +17,11 @@ export class TicketController {
 
   @Post('reservation')
   async reservationTicket(@Body() createTicketDto: CreateTicketDto) {
-    try {
-      const ticket =
-        await this.ticketService.reservationTicket(createTicketDto);
-      return {
-        statusCode: HttpStatus.CREATED,
-        data: ticket,
-      };
-    } catch (error) {
-      return {
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error.message,
-      };
-    }
+    const ticket = await this.ticketService.reservationTicket(createTicketDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      data: ticket,
+    };
   }
 
   @Get(':ticketId')
@@ -47,7 +39,6 @@ export class TicketController {
       };
     }
   }
-
 
   @Delete(':ticketId')
   async deleteTicketById(@Param('ticketId') ticketId: number) {
