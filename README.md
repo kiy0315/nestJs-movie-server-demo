@@ -6,7 +6,7 @@
 * 동시성 제어: 여러 사용자가 동시에 좌석을 예약할 때 충돌을 방지하고 원자성을 유지
 * WebSocket을 활용한 실시간 좌석 상태 업데이트
 * NestJS의 최신 트렌드를 반영한 코드 구조
-* 운영진과의 실시간 소통을 위한 채팅 기능 추가 예정
+* 운영진과의 실시간 소통을 위한 채팅 기능 
 ## 🛠️ 기술 스택
 #### Backend: NestJS, Prisma, MySQL, Redis, Socket.io
 #### Database: MySQL + Prisma ORM
