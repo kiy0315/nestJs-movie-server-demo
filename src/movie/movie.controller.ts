@@ -27,14 +27,12 @@ export class MovieController {
 
   @Get(':movieId')
   async getMovieById(@Param('movieId') movieId: number) {
-    return this.movieService.getMovieById(movieId);
+    const movie = await this.movieService.getMovieById(movieId);
+    return {
+      ...movie,
+      id: movie.id.toString(),
+    };
   }
-
-  @Get(':genreId') // 장르 id의 값을 카테고리로 받을건지에 대한 고민
-  async getMoviesByGenreId(@Param('genreId') genreId: number) {
-    return this.movieService.getMovieByCategory(genreId);
-  }
-
   @Delete(':movieId')
   async deleteMovie(@Param('movieId') movieId: number) {
     return this.movieService.deleteMovie(movieId);

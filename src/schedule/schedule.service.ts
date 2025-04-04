@@ -7,43 +7,58 @@ export class ScheduleService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createSchedule(createScheduleDto: CreateScheduleDto) {
-    return await this.prisma.schedule.create({
+    const schedule = await this.prisma.schedule.create({
       data: {
-        movie_id: createScheduleDto.movie_id,
-        screen_id: createScheduleDto.screen_id,
+        movie_id: BigInt(createScheduleDto.movie_id),
+        screen_id: BigInt(createScheduleDto.screen_id),
         start_time: createScheduleDto.start_time,
         end_time: createScheduleDto.end_time,
       },
     });
+
+    return {
+      ...schedule,
+      id: schedule.id.toString(),
+    };
   }
 
   async getAllSchedule() {
-    return await this.prisma.schedule.findMany({
+    const schedules = await this.prisma.schedule.findMany({
       include: {
-        movies: {
+        movie: {
           select: {
             title: true,
-            runningTime: true,
+            running_time: true,
           },
         },
       },
     });
+    return schedules.map((schedule) => ({
+      ...schedule,
+      id: schedule.id.toString(),
+    }));
   }
 
   async getScheduleById(scheduleId: number) {
     try {
-      return await this.prisma.schedule.findUnique({
+      const schedule = await this.prisma.schedule.findUnique({
         where: { id: scheduleId },
         include: {
-          movies: {
+          movie: {
             select: {
               id: true,
               title: true,
-              summary: true, // 예시로 필요한 필드 추가
+              summary: true,
+              running_time: true,
             },
           },
         },
       });
+
+      return {
+        ...schedule,
+        id: schedule.id.toString(),
+      };
     } catch (error) {
       console.error(error);
     }
@@ -51,9 +66,14 @@ export class ScheduleService {
 
   async deleteSchedule(scheduleId: number) {
     try {
-      return await this.prisma.schedule.delete({
-        where: { id: scheduleId },
+      const schedule = await this.prisma.schedule.delete({
+        where: { id: BigInt(scheduleId) },
       });
+
+      if (!schedule) {
+        throw new NotFoundException(`Schedule with ID ${scheduleId} not found`);
+      }
+      return { message: 'schedule deleted successfully' };
     } catch (error) {
       throw new NotFoundException('Schedule not found');
     }

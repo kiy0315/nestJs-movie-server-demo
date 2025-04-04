@@ -20,7 +20,7 @@ export class CreateMovieDto {
   detail: string;
 
   @IsInt()
-  runningTime: number;
+  running_time: number;
 
   @IsString()
   @IsNotEmpty()
@@ -29,8 +29,4 @@ export class CreateMovieDto {
   @IsString()
   @IsNotEmpty()
   language: string;
-
-  @IsOptional()
-  @IsUrl()
-  image_url?: string;
 }

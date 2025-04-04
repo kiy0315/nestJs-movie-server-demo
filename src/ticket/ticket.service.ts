@@ -47,21 +47,33 @@ export class TicketService {
       },
     });
 
-    return ticket;
+    return {
+      ...ticket,
+      id: ticket.id.toString(),
+      seat_id: ticket.seat_id.toString(),
+      schedule_id: ticket.schedule_id.toString(),
+      user_id: ticket.user_id.toString(),
+    };
   }
 
   // 티켓 조회
   async getTicketById(ticketId: number) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { users: { select: { email: true } } },
+      include: { user: { select: { email: true } } },
     });
 
     if (!ticket) {
       throw new NotFoundException(`Ticket with ID ${ticketId} not found`);
     }
 
-    return ticket;
+    return {
+      ...ticket,
+      id: ticket.id.toString(),
+      user_id: ticket.user_id?.toString(),
+      schedule_id: ticket.schedule_id?.toString(),
+      seat_id: ticket.seat_id?.toString(),
+    };
   }
 
   // 티켓 삭제
@@ -81,4 +93,3 @@ export class TicketService {
     return { message: 'Ticket deleted successfully' };
   }
 }
-

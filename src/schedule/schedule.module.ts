@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
 import { ScheduleController } from './schedule.controller';
-import { PrismaService } from '../../prisma/prisma.service'; // Prisma 서비스 추가
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Module({
   controllers: [ScheduleController],
-  providers: [ScheduleService, PrismaService], // PrismaService 주입
+  providers: [ScheduleService, PrismaService],
 })
 export class ScheduleModule {}

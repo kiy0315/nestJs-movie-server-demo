@@ -7,39 +7,42 @@ export class MovieService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createMovie(createMovieDto: CreateMovieDto) {
-    return await this.prisma.movies.create({
+    const movie = await this.prisma.movie.create({
       data: createMovieDto,
     });
+    return {
+      ...movie,
+      id: movie.id.toString(),
+    };
   }
 
   async getAllMovies() {
-    return await this.prisma.movies.findMany();
+    const movies = await this.prisma.movie.findMany();
+    return movies.map((movie) => ({
+      ...movie,
+      id: movie.id.toString(),
+    }));
   }
 
   async getMovieById(movieId: number) {
-    const movie = await this.prisma.movies.findUnique({
-      where: { id: movieId },
+    const movie = await this.prisma.movie.findUnique({
+      where: { id: BigInt(movieId) },
     });
 
     if (!movie) throw new NotFoundException('Movie not found');
+
     return movie;
   }
 
-  // async getMovieByCategory(genreId: number) {
-  //   return await this.prisma.movies.findMany({
-  //     where: { genreId: genreId },
-  //     include: {
-  //       genre: { select: { title: true } },
-  //       rating: { select: { rating: true } },
-  //     },
-  //   });
-  // }
-
   async deleteMovie(movieId: number) {
     try {
-      return await this.prisma.movies.delete({
-        where: { id: movieId },
+      const movie = await this.prisma.movie.delete({
+        where: { id: BigInt(movieId) },
       });
+      if (!movie)
+        throw new NotFoundException(`Ticket with ID ${movieId} not found`);
+
+      return { message: 'movie deleted successfully' };
     } catch (error) {
       throw new NotFoundException('Movie not found');
     }
