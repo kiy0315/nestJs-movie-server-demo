@@ -7,4 +7,4 @@ import { PrismaService } from '../../prisma/prisma.service'; // Prisma 서비스
   controllers: [GenreController],
   providers: [GenreService, PrismaService], // PrismaService 주입
 })
-export class MovieModule {}
+export class GenreModule {}
